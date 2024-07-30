@@ -1,16 +1,19 @@
 
 const express = require('express')
-const bodyParser = require('body-parser')
+
 
 const {graphqlHTTP}= require('express-graphql');
-const  { buildSchema }= require('graphql')
 const mongoose= require('mongoose')
-const Event= require('./models/event');
-const User = require('./models/user');
 
+
+
+const schemas=require('./graphql/schema/index')
+const rootValue=require('./graphql/resolver/index');
+const authentication = require('./middleware/authentication');
 
 
 const app = express();
+app.use(authentication)
 app.use(express.json())
 require('dotenv').config()
 
@@ -19,111 +22,12 @@ require('dotenv').config()
 
 
 
+
 app.use('/graphql',(graphqlHTTP({
-     schema:buildSchema(`
-        
-        type Event {
-        _id:ID!
-        title:String!
-        description:String!
-        price:Float!
-        date:String!
-        }
-
-        type User {
-        _id:ID!
-        email:String!
-        password:String
-        
-        }
-
-
-        input EventInput {
-        title:String!
-         description:String!
-         price:Float!
-       
-
-        }
-
-        
-        input UserInput {
-        email:String!
-        password:String!
-        }
-
-        type RootQuery {
-            events: [Event!]!
-            users:[User!]!
-        }
-        type RootMutation {
-            createEvent(eventInput:EventInput):Event
-            createUser(userInput:UserInput):User
-        }
-
-        schema {
-        query :RootQuery
-        mutation:RootMutation
-
-        }
-        `),
-     rootValue:{
-        events:async()=>{
-
-            const events= await Event.find(); 
-            return events.map((e)=>{
-                return {...e._doc}
-            })
-           
-        },
-        createEvent:async(args)=>{
-        
-
-            const event = new Event({
-                title:args.eventInput.title,
-                description:args.eventInput.description,
-                price:args.eventInput.price,
-                date:new Date()
-            })
-       
-
-       
-            return event.save().then((e)=>{
-                
-                return {...e._doc}
-            }).catch((e)=>{
-                console.log(e.message);
-            })
-       
-        },
-        createUser:async(args)=>{
-
-            
-          
-            const user = new User({
-                email:args.userInput.email,
-                password:args.userInput.password
-            })
-
-           await user.save()
-           
-
-        },
-
+     schema:schemas,
+     rootValue:rootValue,
+    graphiql:true
      
-        users:async()=>{
-
-            const users = await User.find();
-
-            return users.map((u)=>{
-                return {...u._doc}
-            })
-
-
-        }
-
-     },
-     graphiql:true
     
 })))
 
