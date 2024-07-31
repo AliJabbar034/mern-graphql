@@ -30,23 +30,27 @@ module.exports={
        }
        
     },
-    createEvent:async(args)=>{
+    createEvent:async(args,req)=>{
 
 try {
+   
     
+    if(!req.isAuth){
+        throw new Error("authentication failed")
+    }
     
     const event = new Event({
         title:args.eventInput.title,
         description:args.eventInput.description,
         price:args.eventInput.price,
         date:new Date(),
-        creator:"66a8763136b3bfad20633487"
+        creator:req.userId
     })
 
 
     await event.save();
 
-    const userExist= await User.findById('66a8763136b3bfad20633487');
+    const userExist= await User.findById(req.userId);
     if(!userExist){
         throw new Error("No user Found")
     }
@@ -111,10 +115,12 @@ try {
        
 
         try {
-            
+            if(!req.isAuth){
+                throw new Error("authentication failed")
+            }
             const booking= await Booking.create({
                 events:args.eventId,
-                user:'66a8763136b3bfad20633487'
+                user:req.userId
             })
 
            
